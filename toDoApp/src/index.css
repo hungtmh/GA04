@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Ensure the root elements fill the viewport so component backgrounds (like the homepage gradient)
+	 can span the full width and height. This prevents the UI appearing "split" when a wrapper
+	 accidentally doesn't stretch to the viewport. */
+html, body, #root {
+	height: 100%;
+	width: 100%;
+}
+
+/* Reset default body margin and enable a neutral background in case a page does not set one. */
+body {
+	margin: 0;
+	background: white;
+}
