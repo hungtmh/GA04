@@ -15,18 +15,14 @@ export const todoApi = {
   },
 
   // Add new todo
-  async addTodo(title) {
+  async addTodo(newTodo) {
     try {
       const response = await fetch(`${API_BASE}/todos`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          title,
-          completed: false,
-          userId: 1,
-        }),
+        body: JSON.stringify(newTodo),
       });
       if (!response.ok) throw new Error('Failed to add todo');
       return await response.json();
