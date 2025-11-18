@@ -34,11 +34,11 @@ export default function TodoListPage({ onNavigate }) {
 
     setIsAdding(true);
     try {
-      const newTodo = {
-        id: Date.now(),
+      const newTodo = await todoApi.addTodo({
         title: newTaskTitle,
         completed: false,
-      };
+        userId: 1,
+      });
       setTodos([newTodo, ...todos]);
       setNewTaskTitle('');
     } catch (err) {
@@ -51,7 +51,7 @@ export default function TodoListPage({ onNavigate }) {
   // Toggle todo completion
   const handleToggleTodo = async (id, completed) => {
     try {
-      await todoApi.updateTodo(id, { completed: !completed });
+      await todoApi.toggleTodo(id, completed);
       setTodos(
         todos.map((todo) =>
           todo.id === id ? { ...todo, completed: !completed } : todo
