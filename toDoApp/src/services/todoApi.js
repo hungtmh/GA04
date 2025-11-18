@@ -1,13 +1,33 @@
-// Todo API Service using JSONPlaceholder as mock backend
-const API_BASE = 'https://jsonplaceholder.typicode.com';
+// Todo API Service using LocalStorage as mock backend (to avoid CORS issues)
+const STORAGE_KEY = 'todoapp_todos';
+
+// Initialize with sample data if storage is empty
+const initializeTodos = () => {
+  const existing = localStorage.getItem(STORAGE_KEY);
+  if (!existing) {
+    const sampleTodos = [
+      { id: 1, title: 'Complete project documentation', completed: false, userId: 1 },
+      { id: 2, title: 'Review code changes', completed: true, userId: 1 },
+      { id: 3, title: 'Test responsive layout', completed: false, userId: 1 },
+      { id: 4, title: 'Deploy to production', completed: false, userId: 1 },
+      { id: 5, title: 'Update README file', completed: true, userId: 1 },
+    ];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sampleTodos));
+    return sampleTodos;
+  }
+  return JSON.parse(existing);
+};
+
+// Simulate network delay for realistic API behavior
+const delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const todoApi = {
   // Fetch all todos
   async getTodos() {
     try {
-      const response = await fetch(`${API_BASE}/todos?_limit=10`);
-      if (!response.ok) throw new Error('Failed to fetch todos');
-      return await response.json();
+      await delay();
+      const todos = initializeTodos();
+      return todos;
     } catch (error) {
       console.error('Error fetching todos:', error);
       throw error;
@@ -17,19 +37,17 @@ export const todoApi = {
   // Add new todo
   async addTodo(title) {
     try {
-      const response = await fetch(`${API_BASE}/todos`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title,
-          completed: false,
-          userId: 1,
-        }),
-      });
-      if (!response.ok) throw new Error('Failed to add todo');
-      return await response.json();
+      await delay();
+      const todos = initializeTodos();
+      const newTodo = {
+        id: Date.now(),
+        title,
+        completed: false,
+        userId: 1,
+      };
+      todos.unshift(newTodo);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+      return newTodo;
     } catch (error) {
       console.error('Error adding todo:', error);
       throw error;
@@ -39,17 +57,14 @@ export const todoApi = {
   // Toggle todo completion status
   async toggleTodo(id, completed) {
     try {
-      const response = await fetch(`${API_BASE}/todos/${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          completed: !completed,
-        }),
-      });
-      if (!response.ok) throw new Error('Failed to update todo');
-      return await response.json();
+      await delay(200);
+      const todos = initializeTodos();
+      const todoIndex = todos.findIndex(t => t.id === id);
+      if (todoIndex === -1) throw new Error('Todo not found');
+      
+      todos[todoIndex].completed = !completed;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+      return todos[todoIndex];
     } catch (error) {
       console.error('Error toggling todo:', error);
       throw error;
@@ -59,10 +74,10 @@ export const todoApi = {
   // Delete todo
   async deleteTodo(id) {
     try {
-      const response = await fetch(`${API_BASE}/todos/${id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Failed to delete todo');
+      await delay(200);
+      const todos = initializeTodos();
+      const filtered = todos.filter(t => t.id !== id);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
       return true;
     } catch (error) {
       console.error('Error deleting todo:', error);

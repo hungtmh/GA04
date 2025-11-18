@@ -61,7 +61,7 @@ export default function HomePage({ onNavigate }) {
 
         {/* Footer */}
         <div className="mt-8 text-gray-600 text-sm">
-          Built with React, Tailwind CSS & JSONPlaceholder API
+          Built with React, Tailwind CSS & LocalStorage API
         </div>
       </div>
     </div>

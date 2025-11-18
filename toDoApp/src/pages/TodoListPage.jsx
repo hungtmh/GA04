@@ -34,8 +34,8 @@ export default function TodoListPage({ onNavigate }) {
     try {
       setIsAdding(true);
       const newTodo = await todoApi.addTodo(newTaskTitle);
-      // Add to local state (JSONPlaceholder returns id 201, so we use unique timestamp)
-      setTodos([{ ...newTodo, id: Date.now() }, ...todos]);
+      // Update local state with the new todo from API
+      setTodos([newTodo, ...todos]);
       setNewTaskTitle('');
     } catch (err) {
       alert('Failed to add todo. Please try again.');
