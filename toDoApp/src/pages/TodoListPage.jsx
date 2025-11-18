@@ -7,34 +7,38 @@ export default function TodoListPage({ onNavigate }) {
   const [error, setError] = useState(null);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editingTitle, setEditingTitle] = useState('');
+  const [deleteId, setDeleteId] = useState(null);
+  const [editConfirmation, setEditConfirmation] = useState(null);
 
-  // Fetch todos on component mount
   useEffect(() => {
+    const fetchTodos = async () => {
+      try {
+        const todosData = await todoApi.getTodos();
+        setTodos(todosData);
+        setLoading(false);
+      } catch (err) {
+        setError('Failed to load todos.');
+        setLoading(false);
+      }
+    };
+
     fetchTodos();
   }, []);
 
-  const fetchTodos = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await todoApi.getTodos();
-      setTodos(data);
-    } catch (err) {
-      setError('Failed to load todos. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Add new todo
+  // Add todo
   const handleAddTodo = async (e) => {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
 
+    setIsAdding(true);
     try {
-      setIsAdding(true);
-      const newTodo = await todoApi.addTodo(newTaskTitle);
-      // Update local state with the new todo from API
+      const newTodo = {
+        id: Date.now(),
+        title: newTaskTitle,
+        completed: false,
+      };
       setTodos([newTodo, ...todos]);
       setNewTaskTitle('');
     } catch (err) {
@@ -47,7 +51,7 @@ export default function TodoListPage({ onNavigate }) {
   // Toggle todo completion
   const handleToggleTodo = async (id, completed) => {
     try {
-      await todoApi.toggleTodo(id, completed);
+      await todoApi.updateTodo(id, { completed: !completed });
       setTodos(
         todos.map((todo) =>
           todo.id === id ? { ...todo, completed: !completed } : todo
@@ -59,13 +63,62 @@ export default function TodoListPage({ onNavigate }) {
   };
 
   // Delete todo
-  const handleDeleteTodo = async (id) => {
+  const handleDeleteTodo = (id) => {
+    setDeleteId(id);
+  };
+
+  const confirmDelete = () => {
     try {
-      await todoApi.deleteTodo(id);
-      setTodos(todos.filter((todo) => todo.id !== id));
+      setTodos(todos.filter((todo) => todo.id !== deleteId));
+      setDeleteId(null);
     } catch (err) {
-      alert('Failed to delete todo. Please try again.');
+      alert('Không thể xóa task. Vui lòng thử lại.');
     }
+  };
+
+  const cancelDelete = () => {
+    setDeleteId(null);
+  };
+
+  // Edit todo
+  const handleEditTodo = (id, currentTitle) => {
+    setEditingId(id);
+    setEditingTitle(currentTitle);
+  };
+
+  const handleEditChange = (e) => {
+    setEditingTitle(e.target.value);
+  };
+
+  const handleEditSave = async (id) => {
+    if (!editingTitle.trim()) return;
+    setEditConfirmation({ id, title: editingTitle });
+  };
+
+  const confirmEdit = () => {
+    try {
+      setTodos(
+        todos.map((todo) =>
+          todo.id === editConfirmation.id
+            ? { ...todo, title: editConfirmation.title }
+            : todo
+        )
+      );
+      setEditingId(null);
+      setEditingTitle('');
+      setEditConfirmation(null);
+    } catch (err) {
+      alert('Không thể cập nhật task. Vui lòng thử lại.');
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditConfirmation(null);
+  };
+
+  const handleEditCancel = () => {
+    setEditingId(null);
+    setEditingTitle('');
   };
 
   if (loading) {
@@ -80,7 +133,7 @@ export default function TodoListPage({ onNavigate }) {
   }
 
   return (
-  <div className="min-h-screen w-full bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen w-full bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
@@ -210,17 +263,52 @@ export default function TodoListPage({ onNavigate }) {
                     </div>
                   </button>
 
-                  {/* Task Title */}
+                  {/* Task Title + Edit */}
                   <div className="flex-1 min-w-0">
-                    <p
-                      className={`text-base sm:text-lg break-words ${
-                        todo.completed
-                          ? 'line-through text-gray-500'
-                          : 'text-gray-900'
-                      }`}
-                    >
-                      {todo.title}
-                    </p>
+                    {editingId === todo.id ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          className="flex-1 px-2 py-1 border border-indigo-400 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          value={editingTitle}
+                          onChange={handleEditChange}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleEditSave(todo.id);
+                            if (e.key === 'Escape') handleEditCancel();
+                          }}
+                          autoFocus
+                        />
+                        <button
+                          className="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                          onClick={() => handleEditSave(todo.id)}
+                        >
+                          Lưu
+                        </button>
+                        <button
+                          className="px-2 py-1 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                          onClick={handleEditCancel}
+                        >
+                          Hủy
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <p
+                          className={`text-base sm:text-lg break-words ${
+                            todo.completed
+                              ? 'line-through text-gray-500'
+                              : 'text-gray-900'
+                          }`}
+                        >
+                          {todo.title}
+                        </p>
+                        <button
+                          className="ml-2 px-2 py-1 text-sm text-blue-600 border border-blue-200 rounded hover:bg-blue-50"
+                          onClick={() => handleEditTodo(todo.id, todo.title)}
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    )}
                     <p className="text-xs text-gray-400 mt-1">ID: {todo.id}</p>
                   </div>
 
@@ -249,7 +337,56 @@ export default function TodoListPage({ onNavigate }) {
             ))
           )}
         </div>
+
+        {/* Delete Confirmation Modal */}
+        {deleteId && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 w-80">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Xác nhận xóa</h2>
+              <p className="text-gray-600 mb-6">Bạn có chắc chắn muốn xóa task này không?</p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={cancelDelete}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                >
+                  Xóa
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Confirmation Modal */}
+        {editConfirmation && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 w-80">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Xác nhận chỉnh sửa</h2>
+              <p className="text-gray-600 mb-6">Bạn có chắc chắn muốn lưu thay đổi cho task này không?</p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={cancelEdit}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={confirmEdit}
+                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                >
+                  Lưu
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
 }
+

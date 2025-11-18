@@ -35,19 +35,17 @@ export const todoApi = {
   },
 
   // Add new todo
-  async addTodo(title) {
+  async addTodo(newTodo) {
     try {
       await delay();
       const todos = initializeTodos();
-      const newTodo = {
+      const newTodoWithId = {
         id: Date.now(),
-        title,
-        completed: false,
-        userId: 1,
+        ...newTodo,
       };
-      todos.unshift(newTodo);
+      todos.unshift(newTodoWithId);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
-      return newTodo;
+      return newTodoWithId;
     } catch (error) {
       console.error('Error adding todo:', error);
       throw error;
